@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --font-amiri: 'Amiri', serif;
+}
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-islamic-green-dark via-islamic-green to-islamic-green-light text-islamic-white;
+    min-height: 100vh;
+  }
+  
+  * {
+    @apply border-islamic-green-light;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .arabic-text {
+    font-family: var(--font-amiri);
+    direction: rtl;
+  }
+  
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+  
+  .card-shadow {
+    box-shadow: 0 8px 32px 0 rgba(13, 93, 49, 0.37);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-islamic-green-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-islamic-gold rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-islamic-gold-light;
+}
