@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Card from '@/components/common/Card';
+import Card from '@/components/common/card';
 import { AVAILABLE_SURAHS_EXTENDED } from '@/lib/quran-data-extended';
 import { useRouter } from 'next/navigation';
 

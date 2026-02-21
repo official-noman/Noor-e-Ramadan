@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Card from '@/components/common/Card';
+import Card from '@/components/common/card';
 
 interface Quote {
   text: string;
@@ -115,7 +115,7 @@ export default function IslamicQuote() {
           )}
           
           <p className="text-lg text-center mb-4 text-islamic-white leading-relaxed">
-            "{currentQuote.text}"
+            &quot;{currentQuote.text}&quot;
           </p>
           
           <p className="text-sm text-center text-islamic-white/70 italic">
