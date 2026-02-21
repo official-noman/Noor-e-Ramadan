@@ -1,6 +1,9 @@
-import Card from '@/components/common/Card';
-import Button from '@/components/common/Button'
-import SurahList from '@/components/quran/SurahList';
+'use client';
+
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+// import { surahs } from '../../lib/quran-data-extended';
+import SurahList from '../../components/quran/SurahList';
 
 export default function QuranPage() {
   return (
