@@ -4,11 +4,23 @@ const { PrayerTimes, Coordinates, CalculationMethod } = require("adhan");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 8000;
+
 const server = http.createServer();
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+//     methods: ["GET", "POST"],
+//     credentials: true,
+//   },
+// });
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: [
+      "http://localhost:3000",
+      "https://your-app-name.vercel.app" // ⚠️ ডেপ্লয় করার পর Vercel থেকে পাওয়া লিঙ্কটি এখানে বসাবেন
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },

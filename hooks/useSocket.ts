@@ -14,7 +14,8 @@ export function useSocket() {
 
   useEffect(() => {
     // কারণ আপনার server.js ৩০০১ পোর্টে চলছে।
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://127.0.0.1:8000';
+    // const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://127.0.0.1:8000';
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8000';
 
     const socketInstance = io(SOCKET_URL, {
       transports: ['websocket'], // শুধুমাত্র websocket দিলে কানেকশন সুপার ফাস্ট হয়
