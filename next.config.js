@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   eslint: {
     // বিল্ড করার সময় ESLint এরর ইগনোর করবে
     ignoreDuringBuilds: true,
@@ -8,6 +8,13 @@ const nextConfig = {
   typescript: {
     // টাইপ এরর থাকলেও বিল্ড হতে দিবে
     ignoreBuildErrors: true,
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    };
+    return config;
   },
 }
 
