@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Card from '@/components/common/card';
+import Card from '@/components/common/Card';
 import { AVAILABLE_SURAHS, type Surah, type Ayah } from '@/lib/quran-data';
 
 type TranslationLanguage = 'bangla' | 'english' | 'none';

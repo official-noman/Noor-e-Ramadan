@@ -3,7 +3,7 @@
 import { useSocket } from '@/hooks/useSocket';
 import { formatPrayerTime, formatTimeRemaining, getPrayerName, getPrayerIcon } from '@/lib/prayer-times';
 import { motion } from 'framer-motion';
-import Card from '@/components/common/card';
+import Card from '@/components/common/Card';
 import QuranTracker from '@/components/productivity/QuranTracker';
 import SalatChecklist from '@/components/productivity/SalatChecklist';
 import IslamicQuote from '@/components/common/IslamicQuote';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Card from '@/components/common/card';
+import Card from '@/components/common/Card';
 
 interface Quote {
   text: string;

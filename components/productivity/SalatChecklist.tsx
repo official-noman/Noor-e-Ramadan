@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Card from '@/components/common/card';
+import Card from '@/components/common/Card';
 import { getStorageItem, setStorageItem, StorageKeys } from '@/lib/storage';
 
 interface SalatItem {

@@ -10,7 +10,7 @@ import { AVAILABLE_SURAHS_EXTENDED } from '@/lib/quran-data-extended';
 function getSurahByNumberExtended(number: number): Surah | undefined {
   return AVAILABLE_SURAHS_EXTENDED.find(s => s.number === number);
 }
-import Card from '@/components/common/card';
+import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 
 type TranslationLanguage = 'bangla' | 'english' | 'none';

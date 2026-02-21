@@ -1,4 +1,4 @@
-import card from '@/components/common/card';
+import Card from '@/components/common/Card';
 import Button from '@/components/common/Button'
 import SurahList from '@/components/quran/SurahList';
 
