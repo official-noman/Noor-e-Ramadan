@@ -1,188 +1,98 @@
-const { createServer } = require('http');
-const { parse } = require('url');
-const next = require('next');
-const { Server } = require('socket.io');
-const { PrayerTimes, Coordinates, CalculationMethod } = require('adhan');
-const { format, addMinutes, differenceInMilliseconds, isAfter, isBefore } = require('date-fns');
-const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
+const http = require("http");
+const { Server } = require("socket.io");
+const { PrayerTimes, Coordinates, CalculationMethod } = require("adhan");
+require("dotenv").config();
 
-const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOSTNAME || '0.0.0.0';
-const port = parseInt(process.env.PORT || '8000', 10);
+const PORT = process.env.PORT || 8000;
+const server = http.createServer();
 
-// Initialize Next.js app
-const app = next({ dev, hostname: 'localhost' }); // Next.js internal hostname
-const handle = app.getRequestHandler();
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
-// Location: Dhaka, Bangladesh
-const DHAKA_COORDS = new Coordinates(
-  parseFloat(process.env.LATITUDE || '23.8103'),
-  parseFloat(process.env.LONGITUDE || '90.4125')
-);
+const DHAKA_COORDINATES = new Coordinates(23.8103, 90.4125);
+const CALCULATION_METHOD = CalculationMethod.Karachi();
 
-// Calculation method for Bangladesh (using Muslim World League)
-const params = CalculationMethod.MuslimWorldLeague();
-params.fajrAngle = 18;
-params.ishaAngle = 18;
+// নামাজের সময় ক্যালকুলেশন ফাংশন
+function getPrayerData(date) {
+  const p = new PrayerTimes(DHAKA_COORDINATES, date, CALCULATION_METHOD);
+  
+  // ড্যাশবোর্ড এই নামগুলো আশা করছে
+  const times = {
+    fajr: p.fajr,
+    sunrise: p.sunrise,
+    dhuhr: p.dhuhr,
+    asr: p.asr,
+    maghrib: p.maghrib,
+    isha: p.isha,
+  };
 
-// Track active users
-let activeUsers = new Set();
+  const now = new Date();
+  let next = null;
 
-app.prepare().then(() => {
-  const httpServer = createServer(async (req, res) => {
-    try {
-      const parsedUrl = parse(req.url, true);
-      await handle(req, res, parsedUrl);
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err);
-      res.statusCode = 500;
-      res.end('internal server error');
+  // পরবর্তী নামাজ খুঁজে বের করা
+  const entries = Object.entries(times);
+  for (const [name, time] of entries) {
+    if (time > now) {
+      next = { name, time, remaining: time.getTime() - now.getTime() };
+      break;
     }
-  });
-
-  // Initialize Socket.io
-  const io = new Server(httpServer, {
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST'],
-    },
-    transports: ['websocket', 'polling'],
-  });
-
-  // Calculate prayer times for today
-  function getPrayerTimes(date = new Date()) {
-    const prayerTimes = new PrayerTimes(DHAKA_COORDS, date, params);
-    
-    return {
-      fajr: prayerTimes.fajr,
-      sunrise: prayerTimes.sunrise,
-      dhuhr: prayerTimes.dhuhr,
-      asr: prayerTimes.asr,
-      maghrib: prayerTimes.maghrib,
-      isha: prayerTimes.isha,
-    };
   }
 
-  // Get next prayer
-  function getNextPrayer(currentTime = new Date()) {
-    const prayers = getPrayerTimes(currentTime);
-    const prayerNames = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
-    
-    for (const name of prayerNames) {
-      if (isAfter(prayers[name], currentTime)) {
-        return {
-          name,
-          time: prayers[name],
-          remaining: differenceInMilliseconds(prayers[name], currentTime),
-        };
-      }
-    }
-    
-    // If no prayer found today, return tomorrow's Fajr
-    const tomorrow = addMinutes(currentTime, 1440);
-    const tomorrowPrayers = getPrayerTimes(tomorrow);
-    return {
-      name: 'fajr',
-      time: tomorrowPrayers.fajr,
-      remaining: differenceInMilliseconds(tomorrowPrayers.fajr, currentTime),
-    };
+  // যদি আজকের সব নামাজ শেষ হয়ে যায়, তবে আগামীকালের ফজর
+  if (!next) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tp = new PrayerTimes(DHAKA_COORDINATES, tomorrow, CALCULATION_METHOD);
+    next = { name: 'fajr', time: tp.fajr, remaining: tp.fajr.getTime() - now.getTime() };
   }
 
-  // Get Sehri and Iftar times
-  function getSehriIftarTimes(currentTime = new Date()) {
-    const prayers = getPrayerTimes(currentTime);
-    
-    // Sehri ends at Fajr
-    const sehriEnd = prayers.fajr;
-    
-    // Iftar is at Maghrib
-    const iftar = prayers.maghrib;
-    
-    return {
-      sehri: {
-        end: sehriEnd,
-        remaining: isBefore(currentTime, sehriEnd) 
-          ? differenceInMilliseconds(sehriEnd, currentTime)
-          : 0,
-      },
-      iftar: {
-        time: iftar,
-        remaining: isBefore(currentTime, iftar)
-          ? differenceInMilliseconds(iftar, currentTime)
-          : 0,
-      },
-    };
-  }
+  return { times, next };
+}
 
-  // Broadcast real-time updates
-  function broadcastUpdates() {
-    const serverTime = new Date();
-    const prayers = getPrayerTimes(serverTime);
-    const nextPrayer = getNextPrayer(serverTime);
-    const sehriIftar = getSehriIftarTimes(serverTime);
-    
-    io.emit('server-time', {
-      serverTime: serverTime.toISOString(),
-      prayers: {
-        fajr: prayers.fajr.toISOString(),
-        sunrise: prayers.sunrise.toISOString(),
-        dhuhr: prayers.dhuhr.toISOString(),
-        asr: prayers.asr.toISOString(),
-        maghrib: prayers.maghrib.toISOString(),
-        isha: prayers.isha.toISOString(),
-      },
-      nextPrayer: {
-        ...nextPrayer,
-        time: nextPrayer.time.toISOString(),
-      },
+let activeUsers = 0;
+
+io.on("connection", (socket) => {
+  activeUsers++;
+  console.log(`👤 User connected. Total: ${activeUsers}`);
+  io.emit("active-users", { count: activeUsers });
+
+  const interval = setInterval(() => {
+    const now = new Date();
+    const { times, next } = getPrayerData(now);
+
+    // ড্যাশবোর্ডের জন্য সঠিক ডাটা ফরম্যাট
+    const serverTimeData = {
+      prayers: times,
+      nextPrayer: next,
       sehriIftar: {
         sehri: {
-          end: sehriIftar.sehri.end.toISOString(),
-          remaining: sehriIftar.sehri.remaining,
+          end: times.fajr,
+          remaining: times.fajr.getTime() - now.getTime()
         },
         iftar: {
-          time: sehriIftar.iftar.time.toISOString(),
-          remaining: sehriIftar.iftar.remaining,
-        },
+          time: times.maghrib, // ড্যাশবোর্ড এখানে .time খুঁজছে
+          remaining: times.maghrib.getTime() - now.getTime()
+        }
       },
-      activeUsers: activeUsers.size,
-    });
-  }
+      serverTime: now.getTime()
+    };
 
-  // Socket.io connection handling
-  io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
-    activeUsers.add(socket.id);
-    
-    // Send initial data
-    broadcastUpdates();
-    
-    // Send active users count update
-    io.emit('active-users', activeUsers.size);
-    
-    socket.on('disconnect', () => {
-      console.log('Client disconnected:', socket.id);
-      activeUsers.delete(socket.id);
-      io.emit('active-users', activeUsers.size);
-    });
-    
-    // Handle ping for keep-alive
-    socket.on('ping', () => {
-      socket.emit('pong', { serverTime: new Date().toISOString() });
-    });
+    // আপনার useSocket হুক 'server-time' ইভেন্টটি শুনছে
+    socket.emit("server-time", serverTimeData);
+  }, 1000);
+
+  socket.on("disconnect", () => {
+    activeUsers = Math.max(0, activeUsers - 1);
+    io.emit("active-users", { count: activeUsers });
+    clearInterval(interval);
   });
+});
 
-  // Broadcast updates every second for real-time countdown
-  setInterval(broadcastUpdates, 1000);
-
-  httpServer
-    .once('error', (err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-      console.log(`> Socket.io server running`);
-      console.log(`> Location: Dhaka, Bangladesh (${DHAKA_COORDS.latitude}, ${DHAKA_COORDS.longitude})`);
-    });
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });

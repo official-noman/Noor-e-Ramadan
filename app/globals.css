@@ -53,3 +53,15 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-islamic-gold-light;
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-islamic-green-dark rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-islamic-gold rounded-full;
+}

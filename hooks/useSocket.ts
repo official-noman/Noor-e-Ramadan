@@ -13,31 +13,30 @@ export function useSocket() {
   const maxReconnectAttempts = 5;
 
   useEffect(() => {
-    // Initialize socket connection
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8000', {
-      transports: ['websocket', 'polling'],
+    // কারণ আপনার server.js ৩০০১ পোর্টে চলছে।
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://127.0.0.1:8000';
+
+    const socketInstance = io(SOCKET_URL, {
+      transports: ['websocket'], // শুধুমাত্র websocket দিলে কানেকশন সুপার ফাস্ট হয়
       reconnection: true,
       reconnectionAttempts: maxReconnectAttempts,
       reconnectionDelay: 1000,
     });
 
     socketInstance.on('connect', () => {
-      console.log('Connected to server');
+      console.log('✅ Connected to Socket Server at:', SOCKET_URL);
       setIsConnected(true);
       reconnectAttempts.current = 0;
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from server');
+      console.log('❌ Disconnected from server');
       setIsConnected(false);
     });
 
     socketInstance.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+      console.error('⚠️ Connection error:', error.message);
       reconnectAttempts.current++;
-      if (reconnectAttempts.current >= maxReconnectAttempts) {
-        console.error('Max reconnection attempts reached');
-      }
     });
 
     // Listen for server time updates
@@ -45,22 +44,18 @@ export function useSocket() {
       setServerData(data);
     });
 
-    // Listen for active users updates
-    socketInstance.on('active-users', (count: number) => {
-      setActiveUsers(count);
-    });
-
-    // Keep-alive ping
-    const pingInterval = setInterval(() => {
-      if (socketInstance.connected) {
-        socketInstance.emit('ping');
+    // সংশোধন: server.js থেকে ডাটা আসে { count: number } আকারে
+    socketInstance.on('active-users', (data: any) => {
+      if (typeof data === 'object' && data.count !== undefined) {
+        setActiveUsers(data.count);
+      } else {
+        setActiveUsers(data);
       }
-    }, 30000); // Ping every 30 seconds
+    });
 
     setSocket(socketInstance);
 
     return () => {
-      clearInterval(pingInterval);
       socketInstance.close();
     };
   }, []);
