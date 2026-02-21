@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getSurahByNumber, type Surah } from '@/lib/quran-data';
 import { AVAILABLE_SURAHS_EXTENDED } from '@/lib/quran-data-extended';
 
+
 // Helper function to get surah by number from extended list
 function getSurahByNumberExtended(number: number): Surah | undefined {
   return AVAILABLE_SURAHS_EXTENDED.find(s => s.number === number);
