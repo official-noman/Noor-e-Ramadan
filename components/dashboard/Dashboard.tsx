@@ -33,9 +33,22 @@ export default function Dashboard() {
     );
   }
 
-  const prayers = serverData.prayers;
-  const nextPrayer = serverData.nextPrayer;
-  const sehriIftar = serverData.sehriIftar;
+  const prayers = serverData?.prayers ?? {};
+const nextPrayer = serverData?.nextPrayer ?? null;
+
+const sehriIftar = serverData?.sehriIftar ?? {
+  sehri: { end: "", remaining: 0 },
+  iftar: { time: "", remaining: 0 },
+};
+{/* Sehri & Iftar Countdown */}
+
+if (!sehriIftar?.sehri || !sehriIftar?.iftar) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-xl">Loading Sehri & Iftar...</p>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -143,7 +156,7 @@ export default function Dashboard() {
           <Card>
             <h2 className="text-2xl font-bold mb-4 text-center">Today&apos;s Prayer Times</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {Object.entries(prayers).map(([key, time], index) => {
+              {prayers && Object.entries(prayers).map(([key, time], index) => {
                 const prayerTime = new Date(time);
                 const isNext = nextPrayer?.name === key;
                 
@@ -198,7 +211,12 @@ export default function Dashboard() {
 
         {/* Server Time */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="mt-6 text-center text-sm text-islamic-white/60">
-          <p>Server Time: {new Date(serverData.serverTime).toLocaleString()}</p>
+          <p>
+  Server Time:{" "}
+  {serverData?.serverTime
+    ? new Date(serverData.serverTime).toLocaleString()
+    : "Loading..."}
+</p>
           <p className="mt-1">Location: Dhaka, Bangladesh</p>
         </motion.div>
       </div>

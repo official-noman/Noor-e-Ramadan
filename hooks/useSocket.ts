@@ -59,6 +59,7 @@ export function useSocket() {
     return () => {
       socketInstance.close();
     };
+    
   }, []);
 
   return {
