@@ -35,6 +35,17 @@ export interface SehriIftar {
 
 export interface ServerTimeData {
   serverTime: string;
+
+  dates: {
+    gregorian: string;
+    hijri: string;
+  };
+
+  location: {
+    key: string;
+    name: string;
+  };
+
   prayers: PrayerTimeResponse;
   nextPrayer: NextPrayer;
   sehriIftar: SehriIftar;

@@ -9,29 +9,34 @@ export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [serverData, setServerData] = useState<ServerTimeData | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
+
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
 
   useEffect(() => {
-    // কারণ আপনার server.js ৩০০১ পোর্টে চলছে।
-    // const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://127.0.0.1:8000';
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8000';
+    const SOCKET_URL =
+      process.env.NEXT_PUBLIC_SOCKET_URL;
+
+    if (!SOCKET_URL) {
+      console.error("❌ NEXT_PUBLIC_SOCKET_URL not set");
+      return;
+    }
 
     const socketInstance = io(SOCKET_URL, {
-      transports: ['websocket'], // শুধুমাত্র websocket দিলে কানেকশন সুপার ফাস্ট হয়
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: maxReconnectAttempts,
       reconnectionDelay: 1000,
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ Connected to Socket Server at:', SOCKET_URL);
+      console.log('✅ Connected to:', SOCKET_URL);
       setIsConnected(true);
       reconnectAttempts.current = 0;
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('❌ Disconnected from server');
+      console.log('❌ Disconnected');
       setIsConnected(false);
     });
 
@@ -40,17 +45,13 @@ export function useSocket() {
       reconnectAttempts.current++;
     });
 
-    // Listen for server time updates
     socketInstance.on('server-time', (data: ServerTimeData) => {
       setServerData(data);
     });
 
-    // সংশোধন: server.js থেকে ডাটা আসে { count: number } আকারে
     socketInstance.on('active-users', (data: any) => {
       if (typeof data === 'object' && data.count !== undefined) {
         setActiveUsers(data.count);
-      } else {
-        setActiveUsers(data);
       }
     });
 
@@ -59,13 +60,19 @@ export function useSocket() {
     return () => {
       socketInstance.close();
     };
-    
   }, []);
+
+  const setLocation = (divisionKey: string) => {
+    if (socket) {
+      socket.emit('set-location', { division: divisionKey });
+    }
+  };
 
   return {
     socket,
     isConnected,
     serverData,
     activeUsers,
+    setLocation,
   };
 }

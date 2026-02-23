@@ -1,8 +1,7 @@
 'use client';
 
-// সব @/ বাদ দিয়ে সরাসরি Relative Path বসানো হয়েছে
 import { useSocket } from '../../hooks/useSocket';
-import { formatPrayerTime, formatTimeRemaining, getPrayerName, getPrayerIcon } from '../../lib/prayer-times';
+import { formatTimeRemaining, getPrayerName, getPrayerIcon } from '../../lib/prayer-times';
 import { motion } from 'framer-motion';
 import Card from '../common/Card';
 import QuranTracker from '../productivity/QuranTracker';
@@ -11,8 +10,19 @@ import IslamicQuote from '../common/IslamicQuote';
 import ChatWidget from '../ai/ChatWidget';
 import SurahList from '../quran/SurahList';
 
+const DIVISIONS = [
+  { key: "dhaka", label: "Dhaka" },
+  { key: "chattogram", label: "Chattogram" },
+  { key: "rajshahi", label: "Rajshahi" },
+  { key: "khulna", label: "Khulna" },
+  { key: "barishal", label: "Barishal" },
+  { key: "rangpur", label: "Rangpur" },
+  { key: "sylhet", label: "Sylhet" },
+  { key: "mymensingh", label: "Mymensingh" },
+];
+
 export default function Dashboard() {
-  const { serverData, isConnected, activeUsers } = useSocket();
+  const { serverData, isConnected, activeUsers, setLocation } = useSocket();
 
   if (!isConnected) {
     return (
@@ -33,193 +43,132 @@ export default function Dashboard() {
     );
   }
 
-  const prayers = serverData?.prayers ?? {};
-const nextPrayer = serverData?.nextPrayer ?? null;
-
-const sehriIftar = serverData?.sehriIftar ?? {
-  sehri: { end: "", remaining: 0 },
-  iftar: { time: "", remaining: 0 },
-};
-{/* Sehri & Iftar Countdown */}
-
-if (!sehriIftar?.sehri || !sehriIftar?.iftar) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-xl">Loading Sehri & Iftar...</p>
-    </div>
-  );
-}
+  const prayers = serverData.prayers;
+  const nextPrayer = serverData.nextPrayer;
+  const sehriIftar = serverData.sehriIftar;
 
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="container mx-auto max-w-6xl">
+
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-5xl font-bold mb-2 text-islamic-gold">Noor-e-Ramadan</h1>
-          <p className="text-xl text-islamic-white/80">Your Real-Time Islamic Companion</p>
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2 glass-effect px-4 py-2 rounded-lg">
-              <span className="text-green-400">●</span>
-              <span className="text-sm">Live</span>
+        <div className="text-center mb-6">
+          <h1 className="text-5xl font-bold text-islamic-gold mb-2">
+            Noor-e-Ramadan
+          </h1>
+          <p className="text-xl text-islamic-white/80">
+            Your Real-Time Islamic Companion
+          </p>
+
+          <div className="mt-4 text-sm text-islamic-white/70">
+            <div>📍 {serverData.location.name}, Bangladesh</div>
+            <div>📅 {serverData.dates.gregorian}</div>
+            <div>🕌 {serverData.dates.hijri}</div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
+            <div className="glass-effect px-4 py-2 rounded-lg">
+              👥 {activeUsers} Active
             </div>
-            <div className="flex items-center gap-2 glass-effect px-4 py-2 rounded-lg">
-              <span>👥</span>
-              <span className="text-sm">{activeUsers} Active</span>
+
+            <div className="glass-effect px-4 py-2 rounded-lg">
+              <select
+                value={serverData.location.key}
+                onChange={(e) => setLocation(e.target.value)}
+                className="bg-transparent outline-none"
+              >
+                {DIVISIONS.map((d) => (
+                  <option key={d.key} value={d.key} className="text-black">
+                    {d.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Next Prayer Alert */}
+        {/* Next Prayer */}
         {nextPrayer && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-6"
-          >
-            <Card hover={false} className="bg-gradient-to-r from-islamic-gold/20 to-islamic-green-light/20 border-2 border-islamic-gold">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <p className="text-sm text-islamic-white/70 mb-1">Next Prayer</p>
-                  <h2 className="text-3xl font-bold text-islamic-gold flex items-center gap-2">
-                    <span>{getPrayerIcon(nextPrayer.name)}</span>
-                    {getPrayerName(nextPrayer.name)}
-                  </h2>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-islamic-white/70 mb-1">Time Remaining</p>
-                  <p className="text-3xl font-mono font-bold text-islamic-white">
-                    {formatTimeRemaining(nextPrayer.remaining)}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
+          <Card>
+            <h2 className="text-xl font-bold mb-2">Next Prayer</h2>
+            <p className="text-2xl">
+              {getPrayerIcon(nextPrayer.name)} {getPrayerName(nextPrayer.name)}
+            </p>
+            <p className="text-xl font-mono">
+              {formatTimeRemaining(nextPrayer.remaining)}
+            </p>
+          </Card>
         )}
 
-        {/* Sehri & Iftar Countdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card hover={true}>
-              <div className="text-center">
-                <div className="text-4xl mb-2">🌙</div>
-                <h3 className="text-xl font-bold mb-2">Sehri Ends</h3>
-                <p className="text-3xl font-mono font-bold text-islamic-gold mb-2">
-                  {formatTimeRemaining(sehriIftar.sehri.remaining)}
-                </p>
-                <p className="text-sm text-islamic-white/70">
-                  {new Date(sehriIftar.sehri.end).toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
-              </div>
-            </Card>
-          </motion.div>
+        {/* Sehri & Iftar */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <Card>
+            <h3 className="font-bold">Sehri Ends</h3>
+            <p className="text-sm text-islamic-white/70 mt-1">
+  Ends at: {new Date(sehriIftar.sehri.end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+</p>
+            <p className="text-xl font-mono">
+              {formatTimeRemaining(sehriIftar.sehri.remaining)}
+            </p>
+          </Card>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card hover={true}>
-              <div className="text-center">
-                <div className="text-4xl mb-2">🌅</div>
-                <h3 className="text-xl font-bold mb-2">Iftar Time</h3>
-                <p className="text-3xl font-mono font-bold text-islamic-gold mb-2">
-                  {formatTimeRemaining(sehriIftar.iftar.remaining)}
-                </p>
-                <p className="text-sm text-islamic-white/70">
-                  {new Date(sehriIftar.iftar.time).toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
-              </div>
-            </Card>
-          </motion.div>
+          <Card>
+            <h3 className="font-bold">Iftar Time</h3>
+            <p className="text-sm text-islamic-white/70 mt-1">
+  At: {new Date(sehriIftar.iftar.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+</p>
+            <p className="text-xl font-mono">
+              {formatTimeRemaining(sehriIftar.iftar.remaining)}
+            </p>
+          </Card>
         </div>
 
         {/* Prayer Times */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card>
-            <h2 className="text-2xl font-bold mb-4 text-center">Today&apos;s Prayer Times</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {prayers && Object.entries(prayers).map(([key, time], index) => {
-                const prayerTime = new Date(time);
-                const isNext = nextPrayer?.name === key;
-                
-                return (
-                  <motion.div
-                    key={key}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                    className={`p-4 rounded-lg text-center ${
-                      isNext 
-                        ? 'bg-islamic-gold/30 border-2 border-islamic-gold' 
-                        : 'glass-effect'
-                    }`}
-                  >
-                    <div className="text-2xl mb-2">{getPrayerIcon(key)}</div>
-                    <p className="font-semibold text-sm mb-1">{getPrayerName(key)}</p>
-                    <p className="text-xl font-bold text-islamic-gold">
-                      {prayerTime.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: true 
-                      })}
-                    </p>
-                    {isNext && (
-                      <p className="text-xs mt-1 text-islamic-white/70">Next</p>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-          </Card>
-        </motion.div>
+        <Card className="mt-6">
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            Today’s Prayer Times
+          </h2>
 
-        {/* Trackers */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {Object.entries(prayers).map(([key, time]) => {
+              const prayerTime = new Date(time);
+
+              return (
+                <div key={key} className="p-4 text-center glass-effect rounded-lg">
+                  <div>{getPrayerIcon(key)}</div>
+                  <p>{getPrayerName(key)}</p>
+                  <p>
+                    {prayerTime.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Extra Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <QuranTracker />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-            <SalatChecklist />
-          </motion.div>
+          <QuranTracker />
+          <SalatChecklist />
         </div>
 
-        {/* Quotes & List */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mt-6">
+        <div className="mt-6">
           <IslamicQuote />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="mt-6">
-          <SurahList />
-        </motion.div>
+        </div>
 
-        {/* Server Time */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="mt-6 text-center text-sm text-islamic-white/60">
-          <p>
-  Server Time:{" "}
-  {serverData?.serverTime
-    ? new Date(serverData.serverTime).toLocaleString()
-    : "Loading..."}
-</p>
-          <p className="mt-1">Location: Dhaka, Bangladesh</p>
-        </motion.div>
+        <div className="mt-6">
+          <SurahList />
+        </div>
+
+        <div className="mt-6 text-center text-sm text-islamic-white/60">
+          Server Time: {new Date(serverData.serverTime).toLocaleString()}
+        </div>
+
       </div>
+
       <ChatWidget />
     </div>
   );
